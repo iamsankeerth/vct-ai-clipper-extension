@@ -31,7 +31,10 @@ async def health() -> dict:
 
 @app.post("/events/live", response_model=EventsLiveResponse)
 async def events_live(request: EventsLiveRequest) -> EventsLiveResponse:
-    events, status = await provider.fetch_live_events(request.match_context)
+    try:
+        events, status = await provider.fetch_live_events(request.match_context)
+    except Exception:
+        events, status = [], "error"
     return EventsLiveResponse(events=events, source_status=status, lag_ms=None)
 
 
@@ -41,7 +44,10 @@ async def highlights_suggest(request: SuggestHighlightsRequest) -> SuggestHighli
     source_status = "from_request"
 
     if not events:
-        events, source_status = await provider.fetch_live_events(request.match_context)
+        try:
+            events, source_status = await provider.fetch_live_events(request.match_context)
+        except Exception:
+            events, source_status = [], "error"
 
     suggestions = suggest_highlights(events, max_suggestions=request.max_suggestions)
     return SuggestHighlightsResponse(suggestions=suggestions, source_status=source_status)

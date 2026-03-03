@@ -19,6 +19,18 @@
         <input id="enableAi" type="checkbox" />
         <span>Enable AI suggestions</span>
       </label>
+      <label class="toggle">
+        <input id="enableAutoSuggest" type="checkbox" />
+        <span>Auto-suggest every 8s on live streams</span>
+      </label>
+      <label>
+        Provider Mode
+        <select id="providerMode">
+          <option value="vlr">VLR (primary)</option>
+          <option value="tracker">Tracker (optional)</option>
+          <option value="manual">Manual events only</option>
+        </select>
+      </label>
       <label>
         Local AI Service URL
         <input id="engineUrl" type="text" placeholder="http://127.0.0.1:8787" />

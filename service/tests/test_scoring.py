@@ -1,5 +1,5 @@
 from service.app.models import LiveEvent
-from service.app.scoring import score_event, suggest_highlights
+from service.app.scoring import score_event, suggest_highlights, to_suggestion, ScoringConfig
 
 
 def test_scoring_priority_ace_above_clutch_and_kill() -> None:
@@ -20,3 +20,15 @@ def test_suggestions_limit_and_sort() -> None:
     suggestions = suggest_highlights(events, max_suggestions=2)
     assert len(suggestions) == 2
     assert suggestions[0].event_type == "ace"
+
+
+def test_to_suggestion_builds_clip_window_from_event_time() -> None:
+    event = LiveEvent(id="w1", type="ace", detected_at=1.0, event_time=50)
+    suggestion = to_suggestion(event, ScoringConfig(pre_event_sec=10, post_event_sec=15))
+    assert suggestion.start_sec == 40
+    assert suggestion.end_sec == 65
+
+
+def test_unknown_event_type_uses_default_weight() -> None:
+    event = LiveEvent(id="u1", type="wallbang", detected_at=1.0)
+    assert score_event(event) == 0.35

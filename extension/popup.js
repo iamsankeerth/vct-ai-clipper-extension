@@ -4,15 +4,22 @@ let aiState = {
   events: [],
   suggestions: []
 };
+let pollTimer = null;
+let pollBusy = false;
+let pollBackoffMs = 0;
 
 const DEFAULT_SETTINGS = {
   aiEnabled: true,
+  liveAutoSuggest: true,
+  providerMode: "vlr",
   engineUrl: "http://127.0.0.1:8787",
   convertToMp4: false,
   helperUrl: "http://127.0.0.1:8799",
   rollingMaxSec: 180,
   lastNSeconds: 30
 };
+const POLL_INTERVAL_MS = 8000;
+const POLL_MAX_BACKOFF_MS = 60000;
 
 let settings = { ...DEFAULT_SETTINGS };
 
@@ -36,6 +43,8 @@ const saveLast30Btn = document.getElementById("saveLast30");
 const saveLastNBtn = document.getElementById("saveLastN");
 
 const enableAiInput = document.getElementById("enableAi");
+const enableAutoSuggestInput = document.getElementById("enableAutoSuggest");
+const providerModeSelect = document.getElementById("providerMode");
 const engineUrlInput = document.getElementById("engineUrl");
 const enableMp4Input = document.getElementById("enableMp4");
 const helperUrlInput = document.getElementById("helperUrl");
@@ -84,8 +93,61 @@ function getMatchContext() {
     team_b: teamBInput.value.trim() || undefined,
     map: mapNameInput.value.trim() || undefined,
     stream_url: currentState?.url || undefined,
-    source: "vlr"
+    source: settings.providerMode
   };
+}
+
+function shouldAutoPoll() {
+  return Boolean(settings.aiEnabled && settings.liveAutoSuggest && currentState?.isLive && activeTab?.id);
+}
+
+function stopAutoPoll() {
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+}
+
+function scheduleAutoPoll(delayMs = POLL_INTERVAL_MS) {
+  stopAutoPoll();
+  if (!shouldAutoPoll()) return;
+  pollTimer = setTimeout(runAutoPollCycle, delayMs);
+}
+
+async function runAutoPollCycle() {
+  if (!shouldAutoPoll()) {
+    stopAutoPoll();
+    return;
+  }
+
+  if (pollBusy) {
+    scheduleAutoPoll(POLL_INTERVAL_MS);
+    return;
+  }
+
+  pollBusy = true;
+  try {
+    await onFetchEvents({ silent: true });
+    if (aiState.events.length) {
+      await onSuggestHighlights({ silent: true, skipFetch: true });
+    }
+    pollBackoffMs = 0;
+  } catch {
+    pollBackoffMs = pollBackoffMs === 0
+      ? POLL_INTERVAL_MS
+      : Math.min(POLL_MAX_BACKOFF_MS, pollBackoffMs * 2);
+  } finally {
+    pollBusy = false;
+    scheduleAutoPoll(pollBackoffMs || POLL_INTERVAL_MS);
+  }
+}
+
+function syncAutoPoll() {
+  if (!shouldAutoPoll()) {
+    stopAutoPoll();
+    return;
+  }
+  scheduleAutoPoll(POLL_INTERVAL_MS);
 }
 
 function renderSuggestions() {
@@ -125,6 +187,8 @@ function renderSuggestions() {
 async function loadSettings() {
   const stored = await chrome.storage.local.get([
     "aiEnabled",
+    "liveAutoSuggest",
+    "providerMode",
     "engineUrl",
     "convertToMp4",
     "helperUrl",
@@ -134,6 +198,8 @@ async function loadSettings() {
 
   settings = {
     aiEnabled: Boolean(stored.aiEnabled ?? DEFAULT_SETTINGS.aiEnabled),
+    liveAutoSuggest: Boolean(stored.liveAutoSuggest ?? DEFAULT_SETTINGS.liveAutoSuggest),
+    providerMode: String(stored.providerMode ?? DEFAULT_SETTINGS.providerMode),
     engineUrl: normalizeUrl(stored.engineUrl ?? DEFAULT_SETTINGS.engineUrl, DEFAULT_SETTINGS.engineUrl),
     convertToMp4: Boolean(stored.convertToMp4 ?? DEFAULT_SETTINGS.convertToMp4),
     helperUrl: normalizeUrl(stored.helperUrl ?? DEFAULT_SETTINGS.helperUrl, DEFAULT_SETTINGS.helperUrl),
@@ -142,6 +208,11 @@ async function loadSettings() {
   };
 
   enableAiInput.checked = settings.aiEnabled;
+  enableAutoSuggestInput.checked = settings.liveAutoSuggest;
+  settings.providerMode = ["vlr", "tracker", "manual"].includes(settings.providerMode)
+    ? settings.providerMode
+    : DEFAULT_SETTINGS.providerMode;
+  providerModeSelect.value = settings.providerMode;
   engineUrlInput.value = settings.engineUrl;
   enableMp4Input.checked = settings.convertToMp4;
   helperUrlInput.value = settings.helperUrl;
@@ -154,6 +225,8 @@ async function loadSettings() {
 async function saveSettings(showStatus = true) {
   settings = {
     aiEnabled: Boolean(enableAiInput.checked),
+    liveAutoSuggest: Boolean(enableAutoSuggestInput.checked),
+    providerMode: providerModeSelect.value || DEFAULT_SETTINGS.providerMode,
     engineUrl: normalizeUrl(engineUrlInput.value, DEFAULT_SETTINGS.engineUrl),
     convertToMp4: Boolean(enableMp4Input.checked),
     helperUrl: normalizeUrl(helperUrlInput.value, DEFAULT_SETTINGS.helperUrl),
@@ -163,6 +236,7 @@ async function saveSettings(showStatus = true) {
 
   engineUrlInput.value = settings.engineUrl;
   helperUrlInput.value = settings.helperUrl;
+  providerModeSelect.value = settings.providerMode;
   rollingMaxSecInput.value = String(settings.rollingMaxSec);
   lastNSecondsInput.value = String(settings.lastNSeconds);
 
@@ -172,6 +246,7 @@ async function saveSettings(showStatus = true) {
     setStatus("Settings saved.");
   }
 
+  syncAutoPoll();
   renderSuggestions();
 }
 
@@ -378,6 +453,7 @@ async function loadState() {
   clearTimestampsBtn.disabled = markers.length === 0;
 
   await refreshCaptureButtons();
+  syncAutoPoll();
 }
 
 function markerById(id) {
@@ -385,8 +461,6 @@ function markerById(id) {
 }
 
 async function onCheckEngine() {
-  await saveSettings(false);
-
   const response = await chrome.runtime.sendMessage({
     type: "GET_ENGINE_HEALTH",
     engineUrl: settings.engineUrl
@@ -400,8 +474,8 @@ async function onCheckEngine() {
   setStatus(response?.error || "AI service unavailable. Manual clipping still works.", true);
 }
 
-async function onFetchEvents() {
-  await saveSettings(false);
+async function onFetchEvents(options = {}) {
+  const silent = Boolean(options.silent);
   if (!settings.aiEnabled) {
     throw new Error("AI is disabled in settings.");
   }
@@ -422,17 +496,20 @@ async function onFetchEvents() {
   aiState.events = Array.isArray(response.events) ? response.events : [];
   aiState.suggestions = [];
   renderSuggestions();
-  setStatus(`Fetched ${aiState.events.length} event${aiState.events.length === 1 ? "" : "s"}.`);
+  if (!silent) {
+    setStatus(`Fetched ${aiState.events.length} event${aiState.events.length === 1 ? "" : "s"}.`);
+  }
 }
 
-async function onSuggestHighlights() {
-  await saveSettings(false);
+async function onSuggestHighlights(options = {}) {
+  const silent = Boolean(options.silent);
+  const skipFetch = Boolean(options.skipFetch);
   if (!settings.aiEnabled) {
     throw new Error("AI is disabled in settings.");
   }
 
-  if (!aiState.events.length) {
-    await onFetchEvents();
+  if (!skipFetch && !aiState.events.length) {
+    await onFetchEvents({ silent });
   }
 
   const response = await chrome.runtime.sendMessage({
@@ -452,10 +529,12 @@ async function onSuggestHighlights() {
   aiState.suggestions = Array.isArray(response.suggestions) ? response.suggestions : [];
   renderSuggestions();
 
-  if (!aiState.suggestions.length) {
-    setStatus("No suggestions from AI service. Use manual or Save Last 30s.");
-  } else {
-    setStatus(`Prepared ${aiState.suggestions.length} suggestion${aiState.suggestions.length === 1 ? "" : "s"}.`);
+  if (!silent) {
+    if (!aiState.suggestions.length) {
+      setStatus("No suggestions from AI service. Use manual or Save Last 30s.");
+    } else {
+      setStatus(`Prepared ${aiState.suggestions.length} suggestion${aiState.suggestions.length === 1 ? "" : "s"}.`);
+    }
   }
 }
 
@@ -637,8 +716,6 @@ async function onSaveLastN() {
 }
 
 async function onClipTopSuggestion() {
-  await saveSettings(false);
-
   if (!aiState.suggestions.length) {
     if (currentState?.isLive) {
       await onSaveLast30();
@@ -705,6 +782,9 @@ function bindEvents() {
   clipTopSuggestionBtn.addEventListener("click", () => runAction(onClipTopSuggestion));
 
   saveSettingsBtn.addEventListener("click", () => runAction(() => saveSettings(true)));
+  enableAiInput.addEventListener("change", () => runAction(() => saveSettings(false)));
+  enableAutoSuggestInput.addEventListener("change", () => runAction(() => saveSettings(false)));
+  providerModeSelect.addEventListener("change", () => runAction(() => saveSettings(false)));
 }
 
 async function runAction(action) {
@@ -726,6 +806,7 @@ async function runAction(action) {
     if (settings.aiEnabled) {
       await onCheckEngine().catch(() => undefined);
     }
+    syncAutoPoll();
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Failed to initialize popup.", true);
   }

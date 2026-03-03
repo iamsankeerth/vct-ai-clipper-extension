@@ -9,6 +9,11 @@
   - `GET_ENGINE_HEALTH`
   - `AI_FETCH_LIVE_EVENTS`
   - `AI_SUGGEST_CLIPS`
+- Live auto-suggest polling every 8 seconds when enabled.
+- Feature flags:
+  - `ai_enabled`
+  - `live_auto_suggest`
+  - `provider_mode`
 - Safety fallback: clipping keeps working even if AI service is down.
 
 ## Load in Chrome

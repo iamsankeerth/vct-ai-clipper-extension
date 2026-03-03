@@ -38,3 +38,7 @@ cd C:\Users\lenovo\Desktop\San\Fun_Projects\vct-ai-clipper-extension
 - VOD: mark two timestamps and download exact segment.
 - Live: start rolling buffer and click `Save Last 30 Seconds`.
 - AI: set match context and fetch/suggest highlights. If service fails, fallback remains manual/live.
+- Feature flags in extension settings:
+  - `ai_enabled` (`Enable AI suggestions`)
+  - `live_auto_suggest` (`Auto-suggest every 8s on live streams`)
+  - `provider_mode` (`vlr` / `tracker` / `manual`)
