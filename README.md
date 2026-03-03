@@ -1,21 +1,40 @@
-# lawn
+# VCT AI Clipper Extension (Lawn-First)
 
-Video review platform for creative teams. Built by Theo.
+This repository is a Lawn-based workspace with an isolated Chrome clipping extension and a local Python AI service.
 
-## IMPORTANT NOTICE
+## Structure
 
-I am, effectively, not accepting PRs at this time. This may change in the future. My preferred "PR" method is to describe problems in the issues tab and give me detailed prompts I can quickly copy/paste into my agent of choice.
+- `ui/` - full `pingdotgg/lawn` codebase (UI foundation)
+- `extension/` - MV3 YouTube clipper (VOD + live + rolling last-30s)
+- `service/` - FastAPI highlight scoring service
+- `tests/` - end-to-end validation checklist
+- `.venv/` - Python virtual environment
 
-## ...why did you build this?
+## Why this split
 
-I got tired of Frame.io slowly regressing. I wanted something simple, fast and reliable.
+- Clipping reliability is independent from AI/provider availability.
+- Lawn UI base can evolve separately from extension runtime.
+- Service failures degrade to manual/live clipping instead of breaking clip creation.
 
-I don't know how much time I'll have to maintain this long term, so I decided to open source it. I have no idea where this project is going long term.
+## Quick start
 
-My team is using lawn every day already. We intend to continue, and we intend to keep adding things we need throughout.
+### 1) Service
 
-## Docs
+```powershell
+cd C:\Users\lenovo\Desktop\San\Fun_Projects\vct-ai-clipper-extension
+.\.venv\Scripts\python.exe -m pip install -r .\service\requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn service.app.main:app --host 127.0.0.1 --port 8787 --reload
+```
 
-- [Setup](docs/setup.md)
-- [Deployment](docs/deployment.md)
-- [Philosophy](docs/philosophy.md)
+### 2) Extension
+
+1. Open `chrome://extensions`
+2. Enable `Developer mode`
+3. Click `Load unpacked`
+4. Select `C:\Users\lenovo\Desktop\San\Fun_Projects\vct-ai-clipper-extension\extension`
+
+### 3) Use
+
+- VOD: mark two timestamps and download exact segment.
+- Live: start rolling buffer and click `Save Last 30 Seconds`.
+- AI: set match context and fetch/suggest highlights. If service fails, fallback remains manual/live.

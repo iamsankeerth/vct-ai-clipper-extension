@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "VCT Live AI Clipper",
+  "version": "1.1.0",
+  "description": "YouTube VOD/live clipping with rolling last-30s export and lag-tolerant VCT AI suggestions.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting",
+    "storage",
+    "downloads",
+    "tabCapture",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://m.youtube.com/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://127.0.0.1/*",
+    "https://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "VCT Clipper"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/watch*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

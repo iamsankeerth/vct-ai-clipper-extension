@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VCT Live AI Clipper</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="popup">
+    <header>
+      <h1>VCT Live AI Clipper</h1>
+      <p id="status">Connecting to current tab...</p>
+    </header>
+
+    <section class="block" id="settingsSection">
+      <h2>Engine Settings</h2>
+      <label class="toggle">
+        <input id="enableAi" type="checkbox" />
+        <span>Enable AI suggestions</span>
+      </label>
+      <label>
+        Local AI Service URL
+        <input id="engineUrl" type="text" placeholder="http://127.0.0.1:8787" />
+      </label>
+      <label class="toggle">
+        <input id="enableMp4" type="checkbox" />
+        <span>Convert output to MP4 (optional local helper)</span>
+      </label>
+      <label>
+        Local Helper URL
+        <input id="helperUrl" type="text" placeholder="http://127.0.0.1:8799" />
+      </label>
+      <button id="saveSettings" class="btn ghost">Save Settings</button>
+      <p class="hint">If AI/helper services are unavailable, the extension automatically falls back to manual clipping.</p>
+    </section>
+
+    <section class="block" id="aiSection">
+      <h2>VCT Match Assist</h2>
+      <label>
+        Event / Tournament
+        <input id="matchEvent" type="text" placeholder="VCT Pacific Stage 1" />
+      </label>
+      <label>
+        Team A
+        <input id="teamA" type="text" placeholder="Paper Rex" />
+      </label>
+      <label>
+        Team B
+        <input id="teamB" type="text" placeholder="DRX" />
+      </label>
+      <label>
+        Map (optional)
+        <input id="mapName" type="text" placeholder="Bind" />
+      </label>
+      <div class="row">
+        <button id="engineHealth" class="btn ghost">Check Engine</button>
+        <button id="fetchEvents" class="btn ghost">Fetch Live Events</button>
+      </div>
+      <div class="row">
+        <button id="suggestHighlights" class="btn accent">Suggest Highlights</button>
+        <button id="clipTopSuggestion" class="btn primary">Clip Top Suggestion</button>
+      </div>
+      <p class="hint" id="aiHint">AI is assistive only. Core clipping always remains available.</p>
+      <ul id="suggestionList" class="list"></ul>
+    </section>
+
+    <section class="block">
+      <button id="addTimestamp" class="btn primary">Add Timestamp (Current Position)</button>
+      <button id="clearTimestamps" class="btn ghost">Clear Timestamps</button>
+    </section>
+
+    <section class="block" id="vodSection">
+      <h2>VOD Exact Clip</h2>
+      <label>
+        Start
+        <select id="startSelect"></select>
+      </label>
+      <label>
+        End
+        <select id="endSelect"></select>
+      </label>
+      <button id="downloadVod" class="btn accent">Download Exact Segment</button>
+      <p class="hint">Tip: add at least 2 timestamps, then choose start/end.</p>
+    </section>
+
+    <section class="block" id="liveSection">
+      <h2>Live Manual Clip</h2>
+      <button id="startLive" class="btn accent">Start Live Clip</button>
+      <button id="stopLive" class="btn danger">Stop Live Clip & Download</button>
+      <p class="hint">Use this when you know the live start and end moments.</p>
+    </section>
+
+    <section class="block" id="rollingSection">
+      <h2>Live Rolling Buffer</h2>
+      <label>
+        Buffer Size (seconds)
+        <input id="rollingMaxSec" type="number" min="10" max="1800" step="1" />
+      </label>
+      <button id="startRolling" class="btn accent">Start Rolling Buffer</button>
+      <button id="stopRolling" class="btn ghost">Stop Rolling Buffer</button>
+      <label>
+        Clip Last N Seconds
+        <input id="lastNSeconds" type="number" min="1" max="1800" step="1" />
+      </label>
+      <button id="saveLast30" class="btn primary">Save Last 30 Seconds</button>
+      <button id="saveLastN" class="btn primary">Save Last N Seconds</button>
+      <p class="hint">Rolling mode lets you retro-save the most recent part of a live stream.</p>
+    </section>
+
+    <section class="block">
+      <h2>Timestamps</h2>
+      <ul id="timestampList" class="list"></ul>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

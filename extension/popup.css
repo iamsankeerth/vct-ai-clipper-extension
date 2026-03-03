@@ -1,0 +1,154 @@
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 390px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f5f7fb;
+  color: #12161f;
+}
+
+.popup {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+#status {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #415165;
+}
+
+.block {
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #203146;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle input {
+  margin: 0;
+}
+
+select,
+input[type="text"],
+input[type="number"] {
+  border: 1px solid #b8c7dc;
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: #fff;
+  font-size: 12px;
+}
+
+.btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary {
+  background: #0f6dff;
+  color: #fff;
+}
+
+.accent {
+  background: #148253;
+  color: #fff;
+}
+
+.danger {
+  background: #cf2f3f;
+  color: #fff;
+}
+
+.ghost {
+  background: #ecf2fb;
+  color: #12325f;
+}
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  color: #556173;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 140px;
+  overflow: auto;
+  border: 1px dashed #cad5e6;
+  border-radius: 8px;
+  background: #fafcff;
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #e4ebf5;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.list li:last-child {
+  border-bottom: 0;
+}
+
+.list li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list .empty {
+  color: #66748a;
+  justify-content: center;
+}
